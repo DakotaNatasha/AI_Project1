@@ -1,0 +1,53 @@
+Dakota Staubach 113635430
+Elijah DeBruyne 113528189
+
+QS1.1: What data structure do you use for implementing DFS? Why?
+
+    A1.1: DFS uses a stack to explore the deepest node first before backtracking. This provides a way to 
+    track the nodes that have been expanded so they don't get expanded again. 
+
+QS1.2:The Pacman board will show an overlay of the states explored, 
+and the order in which they were explored (brighter red means earlier exploration). 
+Is the exploration order what you would have expected? Does Pacman actually go to all 
+the explored squares on his way to the goal?
+
+    A1.2: No his exploration is not what I expected. I expected him to explore all of the states 
+    to provide us with a visualization of his exploration but instead the pacman is going down 
+    the path rather than the explored states. 
+
+QS2.1: What data structure do you use for implementing BFS? Why?
+
+
+
+QS3.1: What cost function did you implement?  Please briefly describe how your cost function is designed
+(what factors does it consider and how heavy of a weight has each factor considered been given?)
+
+
+
+QS4.1: What is the difference between the nullHeuristic  and the Manhattan distance heuristic? Does nullHeuristic give the optimal solution?  Why is the Manhattan distance heuristic better?
+
+
+
+QS4.2: What happens on openMaze for the various search strategies?
+
+
+
+QS5.1: What states representation do you choose in this problem?
+
+
+
+QS5.2: Briefly  explain your implementation
+
+
+
+QS6.1: What heuristic did you use for this corner problem?  Explain the potential strong points and 
+weak points of your chosen heuristic.  Is your heuristic consistent?  Why?
+
+
+
+QS7.1: What heuristic did you use for this problem?  Explain the potential strong points and weak points 
+of your chosen heuristic.  Is your heuristic consistent?  Why?
+
+
+
+QS8.1: Describe your solution and explain the potential strong points and weak points of your solution.
