@@ -276,83 +276,106 @@ class CornersProblem(search.SearchProblem):
     """
     This search problem finds paths through all four corners of a layout.
 
-    You must select a suitable state space and successor function
+    You must select a suitable state space and successor function.
     """
 
     def __init__(self, startingGameState: pacman.GameState):
         """
-        Stores the walls, pacman's starting position and corners.
+        Stores the walls, Pacman's starting position, and the four corners of the maze.
         """
-        self.walls = startingGameState.getWalls()
-        self.startingPosition = startingGameState.getPacmanPosition()
-        top, right = self.walls.height-2, self.walls.width-2
-        self.corners = ((1,1), (1,top), (right, 1), (right, top))
+        self.walls = startingGameState.getWalls()  # Store wall locations in a grid
+        self.startingPosition = startingGameState.getPacmanPosition()  # Store Pacman's start position
+
+        # Define the four corners of the maze
+        top, right = self.walls.height - 2, self.walls.width - 2
+        self.corners = ((1,1), (1,top), (right,1), (right,top))
+
+        # Check if there is food in all corners and warn if missing
         for corner in self.corners:
             if not startingGameState.hasFood(*corner):
                 print('Warning: no food in corner ' + str(corner))
-        self._expanded = 0 # DO NOT CHANGE; Number of search nodes expanded
+
+        self._expanded = 0  # DO NOT CHANGE; Counts the number of nodes expanded during search
 
     def getStartState(self):
         """
-        Returns the start state (in your state space, not the full Pacman state
-        space)
+        Returns the start state, represented as a tuple:
+        (Pacman's current position, visitedCorners)
+
+        Initially, Pacman has visited no corners, so visitedCorners is an empty tuple.
         """
         return (self.startingPosition, ())
         util.raiseNotDefined()
 
     def isGoalState(self, state: Any):
         """
-        Returns whether this search state is a goal state of the problem.
+        The goal state is reached when Pacman has visited all four corners.
+        
+        The state consists of:
+        - Pacman's current position (ignored here)
+        - A tuple `visitedCorners` that tracks which corners have been visited
+
+        Goal is reached when `visitedCorners` contains all four corners.
         """
         _, visitedCorners = state
-        return len(visitedCorners) == 4
+        return len(visitedCorners) == 4  # True if all four corners have been visited
         util.raiseNotDefined()
 
     def getSuccessors(self, state: Any):
         """
-        Returns successor states, the actions they require, and a cost of 1.
+        Generates successor states by moving in all four possible directions.
 
-         As noted in search.py:
-            For a given state, this should return a list of triples, (successor,
-            action, stepCost), where 'successor' is a successor to the current
-            state, 'action' is the action required to get there, and 'stepCost'
-            is the incremental cost of expanding to that successor
+        Each successor contains:
+        - New position (x, y)
+        - Updated `visitedCorners` tuple if a new corner is reached
+        - A step cost of 1 (since every move costs 1)
+
+        The function ensures Pacman doesn't walk into walls.
         """
 
         successors = []
-        currentPosition, visitedCorners=state
+        currentPosition, visitedCorners = state  # Unpack the current state
+
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            # Add a successor state to the successor list if the action is legal
-            # Here's a code snippet for figuring out whether a new position hits a wall:
-            x,y = currentPosition
+            # Determine new position after taking action
+            x, y = currentPosition
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
-            hitsWall = self.walls[nextx][nexty]
-            if not self.walls[nextx][nexty]:  # Ensure move is valid (not a wall)
-                newVisitedCorners = visitedCorners
 
-                # If new position is a corner and not yet visited, update visitedCorners
+            # Check if the new position is a wall
+            if not self.walls[nextx][nexty]:  
+                newVisitedCorners = visitedCorners  # Default: Keep the same visited corners
+
+                # If the new position is an unvisited corner, add it to visitedCorners
                 if (nextx, nexty) in self.corners and (nextx, nexty) not in visitedCorners:
                     newVisitedCorners = visitedCorners + ((nextx, nexty),)
 
+                # Create new state and add it to successors
                 newState = ((nextx, nexty), newVisitedCorners)
-                successors.append((newState, action, 1))  # Cost = 1
+                successors.append((newState, action, 1))  # Cost of moving is always 1
 
-        self._expanded += 1 # DO NOT CHANGE
+        self._expanded += 1  # DO NOT CHANGE
         return successors
 
     def getCostOfActions(self, actions):
         """
-        Returns the cost of a particular sequence of actions.  If those actions
-        include an illegal move, return 999999.  This is implemented for you.
+        Computes the cost of a sequence of actions.
+
+        If any action leads to an illegal move (hitting a wall), return a large cost (999999).
+        Otherwise, return the number of actions taken (since each step has cost 1).
         """
-        if actions == None: return 999999
-        x,y= self.startingPosition
+        if actions is None: 
+            return 999999
+
+        x, y = self.startingPosition
         for action in actions:
             dx, dy = Actions.directionToVector(action)
             x, y = int(x + dx), int(y + dy)
-            if self.walls[x][y]: return 999999
-        return len(actions)
+            if self.walls[x][y]: 
+                return 999999  # If Pacman tries to move into a wall, return a high cost
+
+        return len(actions)  # The cost is simply the number of actions taken
+
 
 
 
@@ -369,33 +392,40 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     shortest path from the state to a goal of the problem; i.e.  it should be
     admissible.
     """
-    def cornersHeuristic(state, problem):
-        """An improved heuristic for the CornersProblem that estimates the path cost 
-        using the nearest corner distance, the farthest corner distance, and 
-        a Minimum Spanning Tree (MST) over the unvisited corners.
+    def cornersHeuristic(state: Any, problem: CornersProblem):
         """
+        A heuristic for the CornersProblem.
+
+        It estimates the minimum cost to visit all unvisited corners by:
+        1. Finding the Manhattan distance to the nearest unvisited corner.
+        2. Computing a Minimum Spanning Tree (MST) over remaining unvisited corners.
+
+        The MST ensures a lower bound on the cost to complete the problem.
+        """
+
     from util import manhattanDistance
     import itertools
 
     current_position, visited_corners = state
+
+    # Identify unvisited corners
     unvisited = [corner for corner in problem.corners if corner not in visited_corners]
 
-    if not unvisited:
-        return 0  # Goal reached
+    if not unvisited:  
+        return 0  # If all corners are visited, heuristic cost is 0 (goal state)
 
-    # Step 1: Compute the nearest unvisited corner distance
+    # Compute nearest corner distance (for initial movement)
     nearest_corner_dist = min(manhattanDistance(current_position, corner) for corner in unvisited)
 
-    # Step 2: Compute the farthest corner distance
+    # Compute farthest corner distance (to get an upper bound estimate)
     farthest_corner_dist = max(manhattanDistance(current_position, corner) for corner in unvisited)
 
-    # Step 3: Define MST computation inside the heuristic
+    # Compute MST over the unvisited corners
     def computeMST(points):
         """Computes the Minimum Spanning Tree (MST) cost using Kruskal’s Algorithm."""
         if not points:
             return 0
 
-        # Create a distance matrix using Manhattan Distance
         edges = []
         for p1, p2 in itertools.combinations(points, 2):
             cost = manhattanDistance(p1, p2)
@@ -419,6 +449,13 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
 
         return mst_cost
 
+    # Compute MST on unvisited corners
+    mst_cost = computeMST(unvisited)
+
+    # Final heuristic: MST + scaled nearest corner distance
+    return mst_cost + 0.53 * nearest_corner_dist
+
+
     # Step 4: Compute MST on unvisited corners
     mst_cost = computeMST(unvisited)
 
@@ -435,53 +472,98 @@ class AStarCornersAgent(SearchAgent):
 
 class FoodSearchProblem:
     """
-    A search problem associated with finding the a path that collects all of the
-    food (dots) in a Pacman game.
+    A search problem where the goal is to collect all food (dots) in the maze.
 
-    A search state in this problem is a tuple ( pacmanPosition, foodGrid ) where
-      pacmanPosition: a tuple (x,y) of integers specifying Pacman's position
-      foodGrid:       a Grid (see game.py) of either True or False, specifying remaining food
+    The state representation consists of:
+    - `pacmanPosition`: The current position of Pacman (x, y).
+    - `foodGrid`: A grid representing the remaining food pellets (True = food present, False = no food).
     """
+
     def __init__(self, startingGameState: pacman.GameState):
+        """
+        Initializes the problem by storing:
+        - Pacman's starting position.
+        - A grid of remaining food.
+        - A grid of walls.
+        """
         self.start = (startingGameState.getPacmanPosition(), startingGameState.getFood())
         self.walls = startingGameState.getWalls()
         self.startingGameState = startingGameState
-        self._expanded = 0 # DO NOT CHANGE
-        self.heuristicInfo = {} # A dictionary for the heuristic to store information
+        self._expanded = 0  # DO NOT CHANGE; Tracks number of nodes expanded in search
+        self.heuristicInfo = {}  # Dictionary for heuristic function to store reusable data
 
     def getStartState(self):
+        """
+        Returns the initial search state.
+        - This includes Pacman's position and the food grid at the start.
+        """
         return self.start
 
     def isGoalState(self, state):
+        """
+        The goal is reached when all food has been eaten.
+
+        - `state[1]` contains the foodGrid.
+        - `foodGrid.count()` returns the number of remaining food pellets.
+        - If `count() == 0`, there is no food left, meaning we reached the goal.
+        """
         return state[1].count() == 0
 
     def getSuccessors(self, state):
-        "Returns successor states, the actions they require, and a cost of 1."
+        """
+        Generates successor states by moving in all four possible directions.
+
+        Each successor contains:
+        - New position (x, y).
+        - Updated `foodGrid` (with food removed if Pacman eats it).
+        - A step cost of 1 (since every move costs 1).
+
+        Walls are avoided to prevent illegal moves.
+        """
+
         successors = []
-        self._expanded += 1 # DO NOT CHANGE
+        self._expanded += 1  # DO NOT CHANGE; Tracks number of expanded nodes
+
         for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            x,y = state[0]
-            dx, dy = Actions.directionToVector(direction)
-            nextx, nexty = int(x + dx), int(y + dy)
+            x, y = state[0]  # Extract Pacman's current position
+            dx, dy = Actions.directionToVector(direction)  # Convert direction to movement (dx, dy)
+            nextx, nexty = int(x + dx), int(y + dy)  # Compute next position
+
+            # Check if Pacman can move to (nextx, nexty) (ensure it's not a wall)
             if not self.walls[nextx][nexty]:
-                nextFood = state[1].copy()
-                nextFood[nextx][nexty] = False
-                successors.append( ( ((nextx, nexty), nextFood), direction, 1) )
+                nextFood = state[1].copy()  # Copy current food grid
+                nextFood[nextx][nexty] = False  # If Pacman moves onto food, remove it
+
+                successors.append((( (nextx, nexty), nextFood), direction, 1))  # Add successor
+
         return successors
 
     def getCostOfActions(self, actions):
-        """Returns the cost of a particular sequence of actions.  If those actions
-        include an illegal move, return 999999"""
-        x,y= self.getStartState()[0]
+        """
+        Returns the cost of a sequence of actions.
+
+        - If an action sequence contains an illegal move (walking into a wall), return a high cost (999999).
+        - Otherwise, return the number of actions taken.
+        """
+        if actions is None: 
+            return 999999
+
+        x, y = self.getStartState()[0]
         cost = 0
+
         for action in actions:
-            # figure out the next state and see whether it's legal
+            # Determine next position
             dx, dy = Actions.directionToVector(action)
             x, y = int(x + dx), int(y + dy)
-            if self.walls[x][y]:
-                return 999999
-            cost += 1
-        return cost
+
+            # If Pacman moves into a wall, return a high cost
+            if self.walls[x][y]: 
+                return 999999  
+
+            cost += 1  # Each move costs 1
+
+        return cost  # Total cost is the number of actions taken
+
 
 class AStarFoodSearchAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -491,59 +573,48 @@ class AStarFoodSearchAgent(SearchAgent):
 
 def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     """
-    Your heuristic for the FoodSearchProblem goes here.
+    A heuristic function for the FoodSearchProblem.
 
-    If using A* ever finds a solution that is worse uniform cost search finds,
-    your search may have a but our your heuristic is not admissible!  On the
-    other hand, inadmissible heuristics may find optimal solutions, so be careful.
-
-    The state is a tuple ( pacmanPosition, foodGrid ) where foodGrid is a Grid
-    (see game.py) of either True or False. You can call foodGrid.asList() to get
-    a list of food coordinates instead.
-
-    If you want access to info like walls, capsules, etc., you can query the
-    problem.  For example, problem.walls gives you a Grid of where the walls
-    are.
-
-    If you want to *store* information to be reused in other calls to the
-    heuristic, there is a dictionary called problem.heuristicInfo that you can
-    use. For example, if you only want to count the walls once and store that
-    value, try: problem.heuristicInfo['wallCount'] = problem.walls.count()
-    Subsequent calls to this heuristic can access
-    problem.heuristicInfo['wallCount']
+    Estimates the cost to eat all food by:
+    1. Finding the **maximum Manhattan distance** from Pacman to any food pellet.
+    2. Computing a **Minimum Spanning Tree (MST)** over all remaining food pellets.
+    
+    The MST provides a lower bound for the minimum cost needed to eat all food.
     """
-    position, foodGrid = state
-   
+
     from util import manhattanDistance
     from util import PriorityQueue
 
-    foodList = foodGrid.asList()  # Convert food grid to list of coordinates
-    
-    if not foodList:  # If no food left, heuristic should be 0
-        return 0
+    position, foodGrid = state  # Extract Pacman's position and food grid
+    foodList = foodGrid.asList()  # Convert food grid into a list of food pellet coordinates
 
-    # 1. Maximum distance from Pacman to any food pellet (Admissible)
+    if not foodList:  
+        return 0  # If no food remains, heuristic should be 0 (goal state reached)
+
+    # Compute the maximum distance from Pacman to any food pellet (Admissible)
     maxDistance = max(manhattanDistance(position, food) for food in foodList)
 
-    # 2. Minimum Spanning Tree (MST) computation (Optional)
+    # Compute a Minimum Spanning Tree (MST) on remaining food pellets
     def computeMST(points):
         """
-        Computes the MST cost using Prim's algorithm.
+        Computes the MST cost using **Prim's Algorithm**.
+
+        The MST helps estimate the shortest path needed to eat all food.
         """
         if not points:
             return 0
-        
+
         pq = PriorityQueue()
         visited = set()
-        start = points[0]
+        start = points[0]  # Pick an arbitrary start point
         visited.add(start)
         totalCost = 0
 
-        # Add edges from start node to PQ
+        # Add edges from start node to the priority queue
         for p in points[1:]:
             pq.push((start, p, manhattanDistance(start, p)), manhattanDistance(start, p))
 
-        while len(visited) < len(points):
+        while len(visited) < len(points):  # Expand MST until all nodes are connected
             while not pq.isEmpty():
                 u, v, cost = pq.pop()
                 if v not in visited:
@@ -553,11 +624,14 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
                         if p not in visited:
                             pq.push((v, p, manhattanDistance(v, p)), manhattanDistance(v, p))
                     break
-        return totalCost
+
+        return totalCost  # The MST cost is a lower bound on the cost of collecting all food
 
     mstCost = computeMST(foodList)  # Compute MST over remaining food
 
-    return max(mstCost, maxDistance)
+    # Return the heuristic estimate: max(Pacman→food, MST(food))
+    return max(mstCost, maxDistance)  
+
 
 
 class ClosestDotSearchAgent(SearchAgent):
@@ -579,58 +653,50 @@ class ClosestDotSearchAgent(SearchAgent):
 
     def findPathToClosestDot(self, gameState: pacman.GameState):
         """
-        Returns a path (a list of actions) to the closest dot, starting from
-        gameState.
+        Returns a path (a list of actions) to the closest food pellet.
+
+        Uses **Breadth-First Search (BFS)** to ensure the shortest path is found.
         """
-        # Here are some useful elements of the startState
-        startPosition = gameState.getPacmanPosition()
-        food = gameState.getFood()
-        walls = gameState.getWalls()
-        problem = AnyFoodSearchProblem(gameState)
 
-    # Define the search problem
-        problem = AnyFoodSearchProblem(gameState)
+        # Step 1: Extract relevant information from the game state
+        startPosition = gameState.getPacmanPosition()  # Get Pacman's current position
+        food = gameState.getFood()  # Get grid of food locations
+        walls = gameState.getWalls()  # Get grid of walls
 
-        # Use BFS to find the shortest path to any food
-        return search.bfs(problem)
+        # Step 2: Define the search problem
+        problem = AnyFoodSearchProblem(gameState)  # Create a search problem instance
 
+        # Step 3: Use BFS to find the shortest path to any food pellet
+        return search.bfs(problem)  
         util.raiseNotDefined()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
-    A search problem for finding a path to any food.
+    A search problem for finding a path to the **nearest** food.
 
-    This search problem is just like the PositionSearchProblem, but has a
-    different goal test, which you need to fill in below.  The state space and
-    successor function do not need to be changed.
-
-    The class definition above, AnyFoodSearchProblem(PositionSearchProblem),
-    inherits the methods of the PositionSearchProblem.
-
-    You can use this search problem to help you fill in the findPathToClosestDot
-    method.
+    This search problem inherits from `PositionSearchProblem`.
     """
 
     def __init__(self, gameState):
-        "Stores information from the gameState.  You don't need to change this."
-        # Store the food for later reference
+        """
+        Stores information about:
+        - The food grid.
+        - Walls in the maze.
+        - Pacman's starting position.
+        """
         self.food = gameState.getFood()
-
-        # Store info for the PositionSearchProblem (no need to change this)
         self.walls = gameState.getWalls()
         self.startState = gameState.getPacmanPosition()
-        self.costFn = lambda x: 1
-        self._visited, self._visitedlist, self._expanded = {}, [], 0 # DO NOT CHANGE
+        self.costFn = lambda x: 1  # Every move costs 1
+        self._visited, self._visitedlist, self._expanded = {}, [], 0  # DO NOT CHANGE
 
     def isGoalState(self, state: Tuple[int, int]):
         """
-        The state is Pacman's position. Fill this in with a goal test that will
-        complete the problem definition.
+        The goal state is reached when Pacman lands on a food pellet.
         """
-        x,y = state
-
         x, y = state
-        return self.food[x][y]  # True if food is at (x, y)
+        return self.food[x][y]  # Returns True if food is present at (x, y)
+
         util.raiseNotDefined()
 
 def mazeDistance(point1: Tuple[int, int], point2: Tuple[int, int], gameState: pacman.GameState) -> int:

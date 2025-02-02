@@ -36,10 +36,42 @@ QS2.1: What data structure do you use for implementing BFS? Why?
 
 QS3.1: What cost function did you implement?  Please briefly describe how your cost function is designed
 (what factors does it consider and how heavy of a weight has each factor considered been given?)
+    A3.1: The cost function I used for the Uniform Cost Search is:
+        total cost g(n) = the summation of the step cost from the start node to the current node
+    The cost function is incorporated into the below snippet of the code.
+        for successor, action, stepCost in problem.getSuccessors(state):
+            newCost = cost + stepCost
+    Each step cost is retrieved during the expansion phase of a node. Each action has an associated stepCost that 
+    is retrieved and determined by 'getSuccessors()' This peice of code gets the value of the cost for moving between nodes.
+    
+    In Pacman the stepCost is typically unweighted so a step only costs 1, and in this case the UCS will behave similiar to 
+    the BFS and select the shortest path in terms of moves. 
+    
+    However, if the movement costs vary like in deep water verses shallow water, and have a weight, where shallow water is 1,
+    and deep water is 2 than the UCS will avoid the deep water. Therefore, in the weighted scenerio, stepcosts affect expansion 
+    order because UCS Chooses to expand the path with the lowest cost path first and will avoid expanding higher cost options,
+    like deep water. 
+    
+    However, the lowest cost path initially explored might not be the lowest cost path accumulated from start to goal. 
+    So the next node expanded will be the one with in the priority queue with the least path cost. 
+    
+    Finally, the UCS only returns the least cost path from start to goal.  
 
 
 
-QS4.1: What is the difference between the nullHeuristic  and the Manhattan distance heuristic? Does nullHeuristic give the optimal solution?  Why is the Manhattan distance heuristic better?
+QS4.1: What is the difference between the nullHeuristic  and the Manhattan distance heuristic? Does nullHeuristic give the 
+optimal solution?  Why is the Manhattan distance heuristic better?
+    A4.1 The nullHeuristic is a heuristic function that always returns 0 and provides no guidance  to the agent using an 
+    A* search algorithm. It makes A* behave like a UCS. The Manhattan Distance Heuristic estimates the remaining cost to the
+    goal by calculating the number of horizontal and vertical steps needed to reach the target. 
+        h(n) = |x1 - x2| + |y1-y2|
+    
+    Yes the nullHeuristic provides an optimal solution because it makes A* behave like UCS which always find the lowest-cost
+    path. However, it doesn't make A* as efficient because UCS explores more nodes than neccessary. 
+    
+    The Manhattan Distance guides the search more efficiently by causeing A* to have to expand fewer nodes in the case of 
+    having a good heuristic. It reduces search space by prioritizing paths closer to the goal. Addtionally, it is a simple
+    calculation that runs in constant time o(1) per node. 
 
 
 
@@ -51,7 +83,7 @@ QS5.1: What states representation do you choose in this problem?
 
 
 
-QS5.2: Briefly  explain your implementation
+QS5.2: Briefly explain your implementation
 
 
 
