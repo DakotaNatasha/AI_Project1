@@ -3,8 +3,18 @@ Elijah DeBruyne 113528189
 
 QS1.1: What data structure do you use for implementing DFS? Why?
 
-    A1.1: DFS uses a stack to explore the deepest node first before backtracking. This provides a way to 
-    track the nodes that have been expanded so they don't get expanded again. 
+    A1.1: DFS uses a stack to explore the deepest node first before backtracking. It adds new elements to the
+    front of the stack. Elements are popped off the stack from the front as well satisfying the first in first out structure
+    of the DFS. This affects the order in which the elements of the stack are explored and popped from
+    the stack. The elements at the front of the stack are removed from the stack first. In a DFS the initial state is 
+    the starting node. The starting node is added to the stack and then popped during expansion. When the starting node
+    is expanded its neighbors, the next states, are added to the stack. The way in which they are added (pushed) to the 
+    stack affects how a DFS operates. If the nodes are pushed to the stack in a left to right order then the right most 
+    child is explored first. If the nodes ares pushed to the stack in a right to left order then the left most child is 
+    explored first. In this case we are pushing it to the stack in a right to left order so that the left side is the 
+    first to be expanded while the right child stays in the stack. If we hit a dead end no other children are added to
+    the stack and so the deepest right child is at the top of the stack ready to be expanded. This provides a way to track the nodes that have been 
+    expanded so they don't get expanded again.
 
 QS1.2:The Pacman board will show an overlay of the states explored, 
 and the order in which they were explored (brighter red means earlier exploration). 
@@ -13,11 +23,16 @@ the explored squares on his way to the goal?
 
     A1.2: No his exploration is not what I expected. I expected him to explore all of the states 
     to provide us with a visualization of his exploration but instead the pacman is going down 
-    the path rather than the explored states. 
+    the path that is returned rather than going to all of the explored states. 
 
 QS2.1: What data structure do you use for implementing BFS? Why?
 
-
+    A2.1: BFS uses a queue instead of a stack. It explores the shallowest layer of nodes first before moving to
+    explore deeper nodes. New elements are added to the back of the queue. Elements in the queue are removed from
+    the front of the queue. It starts by expanding the start node and then expanding the start nodes neighbors in
+    the next level. It will then expand the neighbors of the previous layer. This patterne will repeat until the goal is found. Once the goal
+    is found the path will be traced back to the begining. The shortest path is discovered in an unweighted graph 
+    for a BFS. 
 
 QS3.1: What cost function did you implement?  Please briefly describe how your cost function is designed
 (what factors does it consider and how heavy of a weight has each factor considered been given?)

@@ -297,14 +297,15 @@ class CornersProblem(search.SearchProblem):
         Returns the start state (in your state space, not the full Pacman state
         space)
         """
-        "*** YOUR CODE HERE ***"
+        return (self.startingPosition, ())
         util.raiseNotDefined()
 
     def isGoalState(self, state: Any):
         """
         Returns whether this search state is a goal state of the problem.
         """
-        "*** YOUR CODE HERE ***"
+        _, visitedCorners = state
+        return len(visitedCorners) == 4
         util.raiseNotDefined()
 
     def getSuccessors(self, state: Any):
@@ -319,15 +320,23 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
+        currentPosition, visitedCorners=state
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
-            #   x,y = currentPosition
-            #   dx, dy = Actions.directionToVector(action)
-            #   nextx, nexty = int(x + dx), int(y + dy)
-            #   hitsWall = self.walls[nextx][nexty]
+            x,y = currentPosition
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            hitsWall = self.walls[nextx][nexty]
+            if not self.walls[nextx][nexty]:  # Ensure move is valid (not a wall)
+                newVisitedCorners = visitedCorners
 
-            "*** YOUR CODE HERE ***"
+                # If new position is a corner and not yet visited, update visitedCorners
+                if (nextx, nexty) in self.corners and (nextx, nexty) not in visitedCorners:
+                    newVisitedCorners = visitedCorners + ((nextx, nexty),)
+
+                newState = ((nextx, nexty), newVisitedCorners)
+                successors.append((newState, action, 1))  # Cost = 1
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -360,11 +369,61 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     shortest path from the state to a goal of the problem; i.e.  it should be
     admissible.
     """
-    corners = problem.corners # These are the corner coordinates
-    walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
+    def cornersHeuristic(state, problem):
+        """An improved heuristic for the CornersProblem that estimates the path cost 
+        using the nearest corner distance, the farthest corner distance, and 
+        a Minimum Spanning Tree (MST) over the unvisited corners.
+        """
+    from util import manhattanDistance
+    import itertools
 
-    "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    current_position, visited_corners = state
+    unvisited = [corner for corner in problem.corners if corner not in visited_corners]
+
+    if not unvisited:
+        return 0  # Goal reached
+
+    # Step 1: Compute the nearest unvisited corner distance
+    nearest_corner_dist = min(manhattanDistance(current_position, corner) for corner in unvisited)
+
+    # Step 2: Compute the farthest corner distance
+    farthest_corner_dist = max(manhattanDistance(current_position, corner) for corner in unvisited)
+
+    # Step 3: Define MST computation inside the heuristic
+    def computeMST(points):
+        """Computes the Minimum Spanning Tree (MST) cost using Kruskal’s Algorithm."""
+        if not points:
+            return 0
+
+        # Create a distance matrix using Manhattan Distance
+        edges = []
+        for p1, p2 in itertools.combinations(points, 2):
+            cost = manhattanDistance(p1, p2)
+            edges.append((cost, p1, p2))
+
+        # Kruskal’s algorithm for MST
+        edges.sort()  # Sort edges by cost
+        parent = {p: p for p in points}
+
+        def find(p):
+            while parent[p] != p:
+                p = parent[p]
+            return p
+
+        mst_cost = 0
+        for cost, p1, p2 in edges:
+            root1, root2 = find(p1), find(p2)
+            if root1 != root2:
+                mst_cost += cost
+                parent[root2] = root1
+
+        return mst_cost
+
+    # Step 4: Compute MST on unvisited corners
+    mst_cost = computeMST(unvisited)
+
+    # Step 5: Return the heuristic estimate
+    return mst_cost + 0.53 * nearest_corner_dist
 
 
 
@@ -454,8 +513,51 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+   
+    from util import manhattanDistance
+    from util import PriorityQueue
+
+    foodList = foodGrid.asList()  # Convert food grid to list of coordinates
+    
+    if not foodList:  # If no food left, heuristic should be 0
+        return 0
+
+    # 1. Maximum distance from Pacman to any food pellet (Admissible)
+    maxDistance = max(manhattanDistance(position, food) for food in foodList)
+
+    # 2. Minimum Spanning Tree (MST) computation (Optional)
+    def computeMST(points):
+        """
+        Computes the MST cost using Prim's algorithm.
+        """
+        if not points:
+            return 0
+        
+        pq = PriorityQueue()
+        visited = set()
+        start = points[0]
+        visited.add(start)
+        totalCost = 0
+
+        # Add edges from start node to PQ
+        for p in points[1:]:
+            pq.push((start, p, manhattanDistance(start, p)), manhattanDistance(start, p))
+
+        while len(visited) < len(points):
+            while not pq.isEmpty():
+                u, v, cost = pq.pop()
+                if v not in visited:
+                    visited.add(v)
+                    totalCost += cost
+                    for p in points:
+                        if p not in visited:
+                            pq.push((v, p, manhattanDistance(v, p)), manhattanDistance(v, p))
+                    break
+        return totalCost
+
+    mstCost = computeMST(foodList)  # Compute MST over remaining food
+
+    return max(mstCost, maxDistance)
 
 
 class ClosestDotSearchAgent(SearchAgent):
@@ -486,7 +588,12 @@ class ClosestDotSearchAgent(SearchAgent):
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
-        "*** YOUR CODE HERE ***"
+    # Define the search problem
+        problem = AnyFoodSearchProblem(gameState)
+
+        # Use BFS to find the shortest path to any food
+        return search.bfs(problem)
+
         util.raiseNotDefined()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -522,7 +629,8 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         """
         x,y = state
 
-        "*** YOUR CODE HERE ***"
+        x, y = state
+        return self.food[x][y]  # True if food is at (x, y)
         util.raiseNotDefined()
 
 def mazeDistance(point1: Tuple[int, int], point2: Tuple[int, int], gameState: pacman.GameState) -> int:

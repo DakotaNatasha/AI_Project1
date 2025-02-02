@@ -137,12 +137,59 @@ def depthFirstSearch(problem: SearchProblem) -> List[Directions]:
 
 def breadthFirstSearch(problem: SearchProblem) -> List[Directions]:
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
+    from util import Queue  # Import the queue from util.py
+
+    # Initialize the frontier with the start state
+    frontier = Queue()
+    frontier.push((problem.getStartState(), [], 0))  # (state, path, cost)
+
+    visited = set()  # Track visited states
+
+    while not frontier.isEmpty():
+        state, path, cost = frontier.pop()  # Dequeue the shallowest node
+        
+        # If goal is found, return the path
+        if problem.isGoalState(state):
+            return path
+        
+        if state not in visited:
+            visited.add(state)  # Mark node as visited
+            
+            # Expand the current node
+            for successor, action, stepCost in problem.getSuccessors(state):
+                if successor not in visited:
+                    newPath = path + [action]
+                    frontier.push((successor, newPath, cost + stepCost))
+
+    return []  # If no solution is found (shouldn't happen in a solvable maze)
+
     util.raiseNotDefined()
 
 def uniformCostSearch(problem: SearchProblem) -> List[Directions]:
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
+    from util import PriorityQueue
+    
+    frontier = PriorityQueue()
+    frontier.push((problem.getStartState(), [], 0), 0)  # (state, path, cost)
+    visited = set()
+    
+    while not frontier.isEmpty():
+        state, path, cost = frontier.pop()  # Pop the least-cost node
+        
+        if problem.isGoalState(state):  # Goal check
+            return path
+        
+        if state not in visited:
+            visited.add(state)
+            
+            for successor, action, stepCost in problem.getSuccessors(state):
+                if successor not in visited:
+                    newPath = path + [action]
+                    newCost = cost + stepCost
+                    frontier.push((successor, newPath, newCost), newCost)  # Push with priority
+            
+    return []  # No solution found
+
     util.raiseNotDefined()
 
 def nullHeuristic(state, problem=None) -> float:
@@ -154,7 +201,36 @@ def nullHeuristic(state, problem=None) -> float:
 
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic) -> List[Directions]:
     """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
+
+    from util import PriorityQueue
+
+    frontier = PriorityQueue()
+    start_state = problem.getStartState()
+    
+    # Push initial state with priority = g(n) + h(n)
+    frontier.push((start_state, [], 0), heuristic(start_state, problem))
+    
+    visited = {}
+
+    while not frontier.isEmpty():
+        state, path, cost = frontier.pop()  # Get the node with the lowest f(n)
+
+        if problem.isGoalState(state):  # If goal, return path
+            return path
+
+        if state in visited and cost >= visited[state]:  # Skip if we already have a better path
+            continue
+        visited[state] = cost  # Mark this cost as the best known path
+
+        for successor, action, stepCost in problem.getSuccessors(state):
+            newPath = path + [action]
+            newCost = cost + stepCost
+            priority = newCost + heuristic(successor, problem)  # f(n) = g(n) + h(n)
+            frontier.update((successor, newPath, newCost), priority)  # Ensure re-prioritization
+
+    return []  # If no solution is found
+
+
     util.raiseNotDefined()
 
 # Abbreviations
